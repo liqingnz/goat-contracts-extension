@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: Apache 2.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ILocking} from "./ILocking.sol";
 
-contract AssetManager is Ownable {
+contract AssetManager is OwnableUpgradeable {
 
     event PoolSetup(uint32 indexed poolIndex, uint256 indexed max, address[] tokens);
     event TokenAdded(uint32 indexed poolIndex, address indexed token);
@@ -23,8 +23,9 @@ contract AssetManager is Ownable {
     mapping(uint32 poolIndex => PoolInfo) public poolInfos;
     mapping(address token => uint32 poolIndex) public tokenPoolIndexes;
 
-    constructor(address _goatLocker, address _owner) Ownable(_owner){
+    function initialize(address _goatLocker, address _owner) public initializer {
         goatLocker = ILocking(_goatLocker);
+        __Ownable_init(_owner);
     }
 
     // get all token addresses of the pool
