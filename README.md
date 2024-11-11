@@ -16,26 +16,26 @@
 Record the max effective locking balance of a token pool.
 Setup and maintained by Goat.
 
--   ### `poolIndexCounter`
+-   #### `poolIndexCounter`
 
 Auto-increment index starting from 1 for setting up pools. Pool with 0 index means it has not been setup yet.
 
--   ### `setupPool(uint256 _max, address[] calldata _tokens)`
+-   #### `setupPool(uint256 _max, address[] calldata _tokens)`
 
 Create a new pool consist of `_tokens` tokens, with a locking limit of `_max`.
 
--   ### `addTokenToPool(uint32 _poolIndex, address _token)`
+-   #### `addTokenToPool(uint32 _poolIndex, address _token)`
 
 Add a token `_token` to exiting pool `_poolIndex`.
 
--   ### `removeTokenFromPool(address _token)`
+-   #### `removeTokenFromPool(address _token)`
 
 Remove a token `_token` from it's pool.
 
--   ### `setPoolMax(uint32 _poolIndex, uint256 _max)`
+-   #### `setPoolMax(uint32 _poolIndex, uint256 _max)`
 
 Set the locking limit of pool `_poolIndex` to `_max`.
 
--   ### `setGoatLocker(address _addr)`
+-   #### `setGoatLocker(address _addr)`
 
 Update the Goat Locking contract address to `_addr`.
