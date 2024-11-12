@@ -2,8 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {IAssetManager} from "./IAssetManager.sol";
-import {ILocking} from "./ILocking.sol";
+import {IAssetManager, ILocking} from "./interfaces/IAssetManager.sol";
 
 /**
  * @dev An extension of Goat Locking contract.
@@ -14,14 +13,14 @@ contract AssetManager is IAssetManager, OwnableUpgradeable {
     ILocking public goatLocker;
 
     struct PoolInfo {
-        uint256 maxLimit;
+        uint256 max;
         address[] tokenList;
     }
 
     /*
      * @dev index start from 1, 0 means not yet setup
      */
-    uint32 public poolIndexCounter = 1;
+    uint32 public poolIndexCounter;
     mapping(uint32 poolIndex => PoolInfo) public poolInfos;
     mapping(address token => uint32 poolIndex) public tokenPoolIndexes;
 
@@ -31,6 +30,14 @@ contract AssetManager is IAssetManager, OwnableUpgradeable {
     ) public initializer {
         goatLocker = ILocking(_goatLocker);
         __Ownable_init(_owner);
+        poolIndexCounter = 1;
+    }
+
+    /**
+     * @dev Return locking limist of the pool `_poolIndex`
+     */
+    function getPoolMax(uint32 _poolIndex) external view returns (uint256) {
+        return poolInfos[_poolIndex].max;
     }
 
     /**
@@ -55,14 +62,41 @@ contract AssetManager is IAssetManager, OwnableUpgradeable {
     /**
      * @dev Returns the remaining locking amount of a token `_token`
      */
-    function getPoolSpace(address _token) external view returns (uint256) {
+    function getPoolSpace(address _token) public view returns (uint256) {
         uint256 total;
         address[] memory tokenList = poolInfos[tokenPoolIndexes[_token]]
             .tokenList;
         for (uint32 i; i < tokenList.length; ++i) {
             total += goatLocker.totalLocking(tokenList[i]);
         }
-        return poolInfos[tokenPoolIndexes[_token]].maxLimit - total;
+        return poolInfos[tokenPoolIndexes[_token]].max - total;
+    }
+
+    /**
+     * @dev Return false if the locking values `values` exceed the locking limit.
+     */
+    function isSafe(
+        ILocking.Locking[] memory values
+    ) external view returns (bool) {
+        uint256[] memory totals = new uint256[](values.length);
+        for (uint8 i; i < values.length; ++i) {
+            if (values[i].amount > 0) {
+                totals[i] = values[i].amount;
+                for (uint8 j = i + 1; j < values.length; ++j) {
+                    if (
+                        tokenPoolIndexes[values[i].token] ==
+                        tokenPoolIndexes[values[j].token]
+                    ) {
+                        totals[i] += values[j].amount;
+                        values[j].amount = 0;
+                    }
+                }
+                if (totals[i] > getPoolSpace(values[i].token)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**
@@ -75,13 +109,16 @@ contract AssetManager is IAssetManager, OwnableUpgradeable {
         uint256 _max,
         address[] calldata _tokens
     ) external onlyOwner {
-        require(_tokens.length > 0, "invalid token");
+        require(_tokens.length > 0, InvalidTokenList());
         poolInfos[poolIndexCounter] = PoolInfo(_max, _tokens);
         for (uint32 i; i < _tokens.length; ++i) {
-            require(tokenPoolIndexes[_tokens[i]] == 0, "already registered");
+            require(
+                tokenPoolIndexes[_tokens[i]] == 0,
+                RegisteredToken(_tokens[i])
+            );
             tokenPoolIndexes[_tokens[i]] = poolIndexCounter;
         }
-        emit PoolSetup(++poolIndexCounter, _max, _tokens);
+        emit PoolSetup(poolIndexCounter++, _max, _tokens);
     }
 
     /**
@@ -93,19 +130,20 @@ contract AssetManager is IAssetManager, OwnableUpgradeable {
         uint32 _poolIndex,
         address _token
     ) external onlyOwner {
-        require(tokenPoolIndexes[_token] == 0, "already registered");
+        require(_poolIndex < poolIndexCounter, InvalidPool(_poolIndex));
+        require(tokenPoolIndexes[_token] == 0, RegisteredToken(_token));
         tokenPoolIndexes[_token] = _poolIndex;
         poolInfos[_poolIndex].tokenList.push(_token);
-        emit TokenAdded(tokenPoolIndexes[_token], _token);
+        emit TokenAdded(_poolIndex, _token);
     }
 
     /**
      * @dev Remove the token `_token` from its' pool
      * Requirement:
-     * - token pool exists
+     * - token has been registered
      */
     function removeTokenFromPool(address _token) external onlyOwner {
-        require(tokenPoolIndexes[_token] != 0, "not registered");
+        require(tokenPoolIndexes[_token] != 0, UnregisteredToken(_token));
         address[] storage tokenList = poolInfos[tokenPoolIndexes[_token]]
             .tokenList;
         for (uint32 i; i < tokenList.length; ++i) {
@@ -114,7 +152,8 @@ contract AssetManager is IAssetManager, OwnableUpgradeable {
                     tokenList[i] = tokenList[tokenList.length - 1];
                 }
                 tokenList.pop();
-                emit TokenAdded(tokenPoolIndexes[_token], _token);
+                emit TokenRemoveed(tokenPoolIndexes[_token], _token);
+                tokenPoolIndexes[_token] = 0;
             }
         }
     }
@@ -122,14 +161,11 @@ contract AssetManager is IAssetManager, OwnableUpgradeable {
     /**
      * @dev Set the locking limit of a pool `_poolIndex` to `_max`
      * Requirement:
-     * - pool has at least one token
+     * - pool has been setup
      */
     function setPoolMax(uint32 _poolIndex, uint256 _max) external onlyOwner {
-        require(
-            poolInfos[_poolIndex].tokenList.length > 0,
-            "pool does not exit"
-        );
-        poolInfos[_poolIndex].maxLimit = _max;
+        require(_poolIndex < poolIndexCounter, InvalidPool(_poolIndex));
+        poolInfos[_poolIndex].max = _max;
         emit MaxUpdate(_poolIndex, _max);
     }
 
@@ -139,7 +175,7 @@ contract AssetManager is IAssetManager, OwnableUpgradeable {
      * - cannot set to address zero
      */
     function setGoatLocker(address _addr) external onlyOwner {
-        require(_addr != address(0), "invalid address");
+        require(_addr != address(0), InvalidAddress());
         goatLocker = ILocking(_addr);
         emit GoatLockerUpdate(_addr);
     }

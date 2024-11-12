@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {ILocking} from "./ILocking.sol";
-import {IAssetManager} from "./IAssetManager.sol";
+import {ILocking} from "./interfaces/ILocking.sol";
+import {IAssetManager} from "./interfaces/IAssetManager.sol";
 
 /**
  * @dev Wrappers around Goat Locking contract that revert when:
@@ -17,7 +17,7 @@ library SafeLocking {
     /**
      * @dev An operation with lock failed.
      */
-    error SafeLockFailed(address token, uint256 amount);
+    error SafeLockFailed();
 
     /**
      * @dev An operation with unlock failed.
@@ -35,14 +35,7 @@ library SafeLocking {
         address validator,
         ILocking.Locking[] calldata values
     ) external {
-        for (uint256 i = 0; i < values.length; i++) {
-            ILocking.Locking memory value = values[i];
-            require(
-                value.amount <=
-                    IAssetManager(assetManager).getPoolSpace(value.token),
-                SafeLockFailed(value.token, value.amount)
-            );
-        }
+        require(IAssetManager(assetManager).isSafe(values), SafeLockFailed());
         goatLocker.lock(validator, values);
     }
 
@@ -57,11 +50,11 @@ library SafeLocking {
         address recipient,
         ILocking.Locking[] calldata values
     ) external {
-        for (uint256 i = 0; i < values.length; i++) {
+        for (uint256 i; i < values.length; ++i) {
             ILocking.Locking memory value = values[i];
             ILocking.Token memory tokenConfig = goatLocker.tokens(value.token);
             require(
-                goatLocker.locking(msg.sender, value.token) - value.amount >
+                goatLocker.locking(msg.sender, value.token) - value.amount >=
                     tokenConfig.threshold,
                 SafeUnlockFailed(value.token, value.amount)
             );
@@ -82,8 +75,9 @@ library SafeLocking {
         ILocking.Locking[] memory values = new ILocking.Locking[](
             tokens.length
         );
-        for (uint256 i; i < tokens.length; i++) {
-            values[i].amount = goatLocker.locking(msg.sender, values[i].token);
+        for (uint256 i; i < tokens.length; ++i) {
+            values[i].token = tokens[i];
+            values[i].amount = goatLocker.locking(msg.sender, tokens[i]);
         }
         goatLocker.unlock(validator, recipient, values);
     }

@@ -66,9 +66,12 @@ interface ILocking {
 
     event ChangeValidatorOwner(address validator, address owner);
 
-    function tokens(address _token) external view returns(Token memory);
-    function locking(address _validator, address _token) external view returns(uint256);
-    function totalLocking(address _token) external view returns(uint256);
+    function tokens(address _token) external view returns (Token memory);
+    function locking(
+        address _validator,
+        address _token
+    ) external view returns (uint256);
+    function totalLocking(address _token) external view returns (uint256);
 
     function create(
         bytes32[2] calldata pubkey,
