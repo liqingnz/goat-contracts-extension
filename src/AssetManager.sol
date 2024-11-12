@@ -152,7 +152,7 @@ contract AssetManager is IAssetManager, OwnableUpgradeable {
                     tokenList[i] = tokenList[tokenList.length - 1];
                 }
                 tokenList.pop();
-                emit TokenRemoveed(tokenPoolIndexes[_token], _token);
+                emit TokenRemoved(tokenPoolIndexes[_token], _token);
                 tokenPoolIndexes[_token] = 0;
             }
         }
@@ -166,7 +166,7 @@ contract AssetManager is IAssetManager, OwnableUpgradeable {
     function setPoolMax(uint32 _poolIndex, uint256 _max) external onlyOwner {
         require(_poolIndex < poolIndexCounter, InvalidPool(_poolIndex));
         poolInfos[_poolIndex].max = _max;
-        emit MaxUpdate(_poolIndex, _max);
+        emit MaxUpdated(_poolIndex, _max);
     }
 
     /**
@@ -177,6 +177,6 @@ contract AssetManager is IAssetManager, OwnableUpgradeable {
     function setGoatLocker(address _addr) external onlyOwner {
         require(_addr != address(0), InvalidAddress());
         goatLocker = ILocking(_addr);
-        emit GoatLockerUpdate(_addr);
+        emit GoatLockerUpdated(_addr);
     }
 }

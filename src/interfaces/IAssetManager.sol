@@ -23,15 +23,15 @@ interface IAssetManager {
     /**
      * @dev Emitted when a token `token` is removed from a pool with index of `poolIndex`.
      */
-    event TokenRemoveed(uint32 indexed poolIndex, address indexed token);
+    event TokenRemoved(uint32 indexed poolIndex, address indexed token);
     /**
      * @dev Emitted when the locking limit `max` is updated to a pool with index of `poolIndex`.
      */
-    event MaxUpdate(uint32 indexed poolIndex, uint256 indexed max);
+    event MaxUpdated(uint32 indexed poolIndex, uint256 indexed max);
     /**
      * @dev Emitted when the Goat Locking contract address is updated to `goatLocker`
      */
-    event GoatLockerUpdate(address indexed goatLocker);
+    event GoatLockerUpdated(address indexed goatLocker);
 
     /**
      * @dev Error when pass in an empty token list.

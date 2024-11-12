@@ -161,7 +161,7 @@ contract TokenPool is Test {
 
         // success
         vm.expectEmit(true, true, true, true);
-        emit IAssetManager.TokenRemoveed(poolIndex, removingToken);
+        emit IAssetManager.TokenRemoved(poolIndex, removingToken);
         assetManager.removeTokenFromPool(removingToken);
         assertEq(assetManager.tokenPoolIndexes(removingToken), 0);
         assertEq(assetManager.getPoolTokens(poolIndex).length, tokenSize - 1);
@@ -184,7 +184,7 @@ contract TokenPool is Test {
 
         // success
         vm.expectEmit(true, true, true, true);
-        emit IAssetManager.MaxUpdate(poolIndex, newPoolMax);
+        emit IAssetManager.MaxUpdated(poolIndex, newPoolMax);
         assetManager.setPoolMax(poolIndex, newPoolMax);
         assertEq(assetManager.getPoolMax(poolIndex), newPoolMax);
     }
@@ -197,7 +197,7 @@ contract TokenPool is Test {
         // success
         address newLocking = address(new MockLocking());
         vm.expectEmit(true, true, true, true);
-        emit IAssetManager.GoatLockerUpdate(newLocking);
+        emit IAssetManager.GoatLockerUpdated(newLocking);
         assetManager.setGoatLocker(newLocking);
     }
 
