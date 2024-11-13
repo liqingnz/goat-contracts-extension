@@ -133,6 +133,16 @@ contract LockingProcess is Test {
         }
         values[3] = ILocking.Locking(address(0), THRESHOLD);
 
+        // fail: token pool not setup
+        vm.expectRevert(SafeLocking.SafeLockFailed.selector);
+        testLock.safeLock(msgSender, values);
+
+        // setup new pool
+        address[] memory newPool = new address[](2);
+        newPool[0] = address(0); // navtive token
+        newPool[1] = address(new MockToken());
+        assetManager.setupPool(TEST_POOL_MAX, newPool);
+
         // success
         vm.expectEmit(true, true, true, true);
         emit ILocking.Lock(msgSender, address(0), THRESHOLD);
@@ -213,6 +223,33 @@ contract LockingProcess is Test {
         );
         testLock.unlock(msgSender, msgSender, values);
         reqId += 3;
+    }
+
+    function test_UnlockRemovedToken() public {
+        ILocking.Locking[] memory values = new ILocking.Locking[](3);
+        for (uint8 i; i < 3; ++i) {
+            values[i] = ILocking.Locking(mockTokens[i], DEFAULT_LOCK_AMOUNT);
+        }
+        testLock.lock(msgSender, values);
+
+        assetManager.removeTokenFromPool(mockTokens[0]);
+
+        // success
+        for (uint8 i; i < 3; ++i) {
+            values[i] = ILocking.Locking(
+                mockTokens[i],
+                DEFAULT_LOCK_AMOUNT - THRESHOLD // equal threshold
+            );
+        }
+        vm.expectEmit(true, true, true, true);
+        emit ILocking.Unlock(
+            0,
+            msgSender,
+            msgSender,
+            values[0].token,
+            values[0].amount
+        );
+        testLock.safeUnlock(msgSender, msgSender, values);
     }
 
     function test_Exit() public {

@@ -64,7 +64,7 @@ contract AssetManager is IAssetManager, OwnableUpgradeable {
      */
     function getPoolSpace(address _token) public view returns (uint256) {
         if (tokenPoolIndexes[_token] == 0) {
-            return goatLocker.tokens(_token).limit;
+            return 0;
         }
         uint256 total;
         address[] memory tokenList = poolInfos[tokenPoolIndexes[_token]]
