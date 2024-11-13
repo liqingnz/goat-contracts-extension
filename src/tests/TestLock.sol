@@ -24,14 +24,14 @@ contract TestLock {
     function lock(
         address _validator,
         ILocking.Locking[] calldata _values
-    ) external {
+    ) external payable {
         locking.lock(_validator, _values);
     }
 
     function safeLock(
         address _validator,
         ILocking.Locking[] calldata _values
-    ) external {
+    ) external payable {
         locking.safeLock(assetManager, _validator, _values);
     }
 

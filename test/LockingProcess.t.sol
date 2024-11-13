@@ -23,6 +23,7 @@ contract LockingProcess is Test {
 
     uint256 public constant DEFAULT_LOCK_AMOUNT = 10 ether;
     uint256 public constant TEST_POOL_MAX = 20 ether;
+    uint256 public THRESHOLD = 5 ether;
 
     function setUp() public virtual {
         msgSender = address(this);
@@ -70,7 +71,7 @@ contract LockingProcess is Test {
 
         // success
         for (uint8 i; i < 3; ++i) {
-            values[i] = ILocking.Locking(mockTokens[i], 5 ether);
+            values[i] = ILocking.Locking(mockTokens[i], THRESHOLD);
         }
         vm.expectEmit(true, true, true, true);
         emit ILocking.Lock(msgSender, values[0].token, values[0].amount);
@@ -104,7 +105,7 @@ contract LockingProcess is Test {
         // user A lock first
         ILocking.Locking[] memory values = new ILocking.Locking[](3);
         for (uint8 i; i < 3; ++i) {
-            values[i] = ILocking.Locking(mockTokens[i], 5 ether);
+            values[i] = ILocking.Locking(mockTokens[i], THRESHOLD);
         }
         testLock.safeLock(msgSender, values);
         vm.stopPrank();
@@ -112,21 +113,34 @@ contract LockingProcess is Test {
         // fail: exceeds the limit (20, Current total = 5 + 5 + 5).
         assertEq(
             assetManager.getPoolSpace(mockTokens[0]),
-            TEST_POOL_MAX - (3 * 5 ether)
+            TEST_POOL_MAX - (3 * THRESHOLD)
         );
         vm.expectRevert(SafeLocking.SafeLockFailed.selector);
         testLock.safeLock(msgSender, values);
 
         // it is safe to lock one token
         values = new ILocking.Locking[](1);
-        values[0] = ILocking.Locking(mockTokens[0], 5 ether);
+        values[0] = ILocking.Locking(mockTokens[0], THRESHOLD);
         vm.expectEmit(true, true, true, true);
         emit ILocking.Lock(msgSender, values[0].token, values[0].amount);
         testLock.safeLock(msgSender, values);
     }
 
+    function test_LockNativeToken() public {
+        ILocking.Locking[] memory values = new ILocking.Locking[](4);
+        for (uint8 i; i < 3; ++i) {
+            values[i] = ILocking.Locking(mockTokens[i], THRESHOLD);
+        }
+        values[3] = ILocking.Locking(address(0), THRESHOLD);
+
+        // success
+        vm.expectEmit(true, true, true, true);
+        emit ILocking.Lock(msgSender, address(0), THRESHOLD);
+        testLock.safeLock{value: THRESHOLD}(msgSender, values);
+        assertEq(locking.locking(msgSender, address(0)), THRESHOLD);
+    }
+
     function test_Unlock() public {
-        uint256 THRESHOLD = 5 ether;
         uint64 reqId;
         ILocking.Locking[] memory values = new ILocking.Locking[](3);
         for (uint8 i; i < 3; ++i) {

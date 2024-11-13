@@ -36,7 +36,7 @@ library SafeLocking {
         ILocking.Locking[] calldata values
     ) external {
         require(IAssetManager(assetManager).isSafe(values), SafeLockFailed());
-        goatLocker.lock(validator, values);
+        goatLocker.lock{value: msg.value}(validator, values);
     }
 
     /**

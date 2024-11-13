@@ -134,6 +134,12 @@ contract TokenPool is Test {
         emit IAssetManager.TokenAdded(poolIndex, newToken);
         assetManager.addTokenToPool(poolIndex, newToken);
         assertEq(assetManager.getPoolTokens(poolIndex).length, tokenSize + 2);
+
+        // add native token
+        vm.expectEmit(true, true, true, true);
+        emit IAssetManager.TokenAdded(poolIndex, address(0));
+        assetManager.addTokenToPool(poolIndex, address(0));
+        assertEq(assetManager.getPoolTokens(poolIndex).length, tokenSize + 3);
     }
 
     function test_RemoveToken() public {
